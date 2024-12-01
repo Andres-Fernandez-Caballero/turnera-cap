@@ -22,16 +22,16 @@ class BookingApiController extends Controller implements HasMiddleware
             new Middleware('auth:sanctum'),
         ];
     }
-  
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request) 
+    public function index(Request $request)
     {
         $user = $request->user();
-        $booking = Booking::with('location')
-            ->where('user_id', $user->id)
+        $booking = Booking::with('location', 'timeSlots')
             ->get();
+
         return response()
             ->json($booking, 200);
     }
@@ -45,33 +45,33 @@ class BookingApiController extends Controller implements HasMiddleware
 
         static::validateRequest( $request, [
             'location_id' => 'required|exists:locations,id',
-            'start_time' => 'required|date|before:end_time',
-            'end_time' => 'required|date|after:start_time',
+            'time_slot_ids' => 'required|array',
             'people_count' => 'required|integer|min:1',
         ] );
-       
+
 
         $location = Location::findOrFail($request->location_id);
 
         // Verificar si la locación tiene TimeSlots
-        if ($location->timeSlots->isEmpty()) {
+        if ($location->timeSlots->where('is_active', true)->isEmpty()) {
             return response()->json([
                 'message' => 'No se pueden crear reservas porque la locación no tiene horarios disponibles.',
             ], 422);
         }
 
         // Verificar si el horario solicitado está dentro de un TimeSlot
-        $timeSlot = $location->timeSlots()
-            ->where('day_of_week', \Carbon\Carbon::parse($request->start_time)->dayOfWeek)
-            ->where('start_time', '<=', \Carbon\Carbon::parse($request->start_time)->format('H:i'))
-            ->where('end_time', '>=', \Carbon\Carbon::parse($request->end_time)->format('H:i'))
-            ->first();
+        $timeSlots = TimeSlot::whereIn('id', $request->time_slot_ids)
+            ->where('is_active', true)->get();
 
-        if (!$timeSlot) {
+        if($timeSlots->isEmpty()) {
             return response()->json([
-                'message' => 'El horario solicitado no está disponible.',
+                'message' => 'No se pueden crear reservas porque el horario solicitado no está disponible.',
             ], 422);
         }
+
+        $timeSlots->each(function ($timeSlot) use ($request) {
+            $timeSlot->validateTimeSlot($request);
+        });
 
         // Verificar capacidad
         $overlapBookings = $location->bookings()
@@ -104,7 +104,7 @@ class BookingApiController extends Controller implements HasMiddleware
      */
     public function show(string $id)
     {
-        $booking = Booking::with('location');
+        $booking = Booking::with('location')->findOrFail($id);
         return response()->json($booking, 200);
     }
 
@@ -122,7 +122,7 @@ class BookingApiController extends Controller implements HasMiddleware
             'people_count' => 'sometimes|integer|min:1',
         ]
     );
-        
+
 
         $booking->update($request->all());
         return response()->json($booking, 200);
@@ -140,7 +140,7 @@ class BookingApiController extends Controller implements HasMiddleware
     }
 
     private static function validateRequest(Request $request, array $rules = [])
-    {   
+    {
         $validator = Validator::make($request->all(),$rules);
         if( $validator->fails() ) {
             return response()->json($validator->errors(), 405);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Booking extends Model
 {
@@ -14,14 +15,8 @@ class Booking extends Model
     protected $fillable = [
         'location_id',
         'user_id',
-        'start_time',
-        'end_time',
+        'date',
         'people_count',
-    ];
-
-    protected $casts = [
-        'start_time' => 'datetime:Y-m-d H:i:s', // Asegura que se formatee como string
-        'end_time' => 'datetime:Y-m-d H:i:s',
     ];
 
     public function location(): BelongsTo
@@ -32,5 +27,10 @@ class Booking extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function timeSlots(): BelongsToMany
+    {
+        return $this->belongsToMany(TimeSlot::class);
     }
 }

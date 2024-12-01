@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('day_of_week');
             $table->time('start_time');
             $table->time('end_time');
+            $table->boolean('is_active')->default(true);
             $table->decimal('cost_per_hour', 8, 2)->default(0);
             $table->timestamps();
         });

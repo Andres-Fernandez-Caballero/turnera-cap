@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
         //   UserSeeder::class,
-        //   LocationSeeder::class,
+           LocationSeeder::class,
         //   TimeSlotSeeder::class,
         //   BookingSeeder::class,
         ]);

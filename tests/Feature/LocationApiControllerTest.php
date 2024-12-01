@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Location;
-use App\Models\TimeSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

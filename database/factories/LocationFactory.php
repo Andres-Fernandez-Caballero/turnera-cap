@@ -17,7 +17,7 @@ class LocationFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->word . ' ' . $this->faker->randomElement(['Cancha', 'Sala', 'Espacio']),
+            'name' => 'location_generic',
             'capacity' => $this->faker->numberBetween(10, 50),
         ];
     }

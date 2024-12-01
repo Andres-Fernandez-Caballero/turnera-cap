@@ -23,4 +23,9 @@ class TimeSlot extends Model
     {
         return $this->belongsTo(Location::class);
     }
+
+    public function bookings(): belongsToMany
+    {
+        return $this->belongsToMany(Booking::class);
+    }
 }
