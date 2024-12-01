@@ -18,12 +18,13 @@ return new class extends Migration
             $table->date('date');
             $table->integer('people_count');
             $table->timestamps();
+
         });
 
         Schema::create('booking_time_slot', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('booking_id')->constrained();
-            $table->foreignId('time_slot_id')->constrained();
+            $table->foreignId('booking_id')->constrained()->onDelete('cascade');
+            $table->foreignId('time_slot_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

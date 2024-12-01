@@ -41,15 +41,18 @@ class TimeSlotsRelationManager extends RelationManager
                     ])
                     ->required(),
                 Forms\Components\TextInput::make('cost_per_hour')
+                    ->label('Costo por hora')
                     ->prefix('ARS $')
                     ->numeric()
                     ->minValue(0)
                     ->required(),
 
                 Forms\Components\TimePicker::make('start_time')
+                    ->label('Hora de inicio')
                     ->seconds(false)
                     ->required(),
                 Forms\Components\TimePicker::make('end_time')
+                    ->label('Hora de cierre')
                     ->seconds(false)
                     ->required(),
 
@@ -61,6 +64,7 @@ class TimeSlotsRelationManager extends RelationManager
         return $table
             ->groups([
                 Tables\Grouping\Group::make('day_of_week')
+                    ->label('Dia de la semana')
                     ->getTitleFromRecordUsing(fn (TimeSlot $record): string => match ($record->day_of_week){
                         0 => 'Domingo',
                         1 => 'Lunes',

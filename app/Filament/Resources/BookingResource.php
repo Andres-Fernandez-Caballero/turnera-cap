@@ -39,8 +39,9 @@ class BookingResource extends Resource
                     ->live()
                     ->required(),
                 Forms\Components\Select::make('timeSlots')
-                    ->relationship('timeSlots')
                     ->multiple()
+                    ->reactive()
+                    ->live()
                     ->label('Horario')
                     ->hidden(fn(Forms\Get $get) => $get('location_id') == null || $get('date') == null)
                     ->options(function(Forms\Get $get) {
@@ -82,12 +83,22 @@ class BookingResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name'),
-                Tables\Columns\TextColumn::make('user.email'),
-                Tables\Columns\TextColumn::make('people_count')->label('Cantidad de personas'),
+                Tables\Columns\TextColumn::make('user.name')
+                ->label('Nombre'),
+
+                Tables\Columns\TextColumn::make('user.email')
+                ->label('Email'),
+
+                Tables\Columns\TextColumn::make('people_count')
+                ->label('Cantidad de personas'),
+
+                Tables\Columns\TextColumn::make('date')
+                ->label('Fecha'),
+
                 Tables\Columns\TextColumn::make('timeSlots.start_time')
                 ->label('Hora de inicio')
                     ->badge(),
+
                 Tables\Columns\TextColumn::make('timeSlots.end_time')
                 ->label('Hora de fin')
                     ->badge(),

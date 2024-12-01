@@ -17,6 +17,7 @@ class Booking extends Model
         'user_id',
         'date',
         'people_count',
+
     ];
 
     public function location(): BelongsTo

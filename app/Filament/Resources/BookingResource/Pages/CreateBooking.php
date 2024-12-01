@@ -17,18 +17,25 @@ class CreateBooking extends CreateRecord
 {
     protected static string $resource = BookingResource::class;
 
-    protected function afterCreate(): void
+
+    protected function beforeCreate(): void
     {
-        try{
-            //
             $data = $this->form->getState()['data'] ?? [];
-            $slotsIds = $this->form->getModelInstance()->timeSlots->pluck('id');
+            $slotsIds = $this->form->getState()['timeSlots'] ?? [];
+            //$slotsIds = $this->all()['data']['timeSlots'];
             $locationId = $this->form->getState()['location_id'] ?? null;
             $date = $this->form->getState()['date'] ?? null;
             $peopleCount = $this->form->getState()['people_count'] ?? null;
 
+
             // Validar datos requeridos
             if (!$locationId || !$date || !$peopleCount || empty($slotsIds)) {
+
+                Notification::make()
+                ->danger()
+                ->title('No se pudieron realizar la reserva')
+                ->body('Por favor, rellene todos los campos requeridos.')
+                ->send();
                 $this->halt();
             }
             foreach ($slotsIds as $slotId) {
@@ -40,18 +47,18 @@ class CreateBooking extends CreateRecord
                 );
 
                 if (!$isAvailable) {
+                    Notification::make()
+                    ->danger()
+                    ->title('No se pudieron realizar la reserva')
+                    ->body('No hay Cupos disponibles para la fecha y horario seleccionado.')
+                    ->send();
                     $this->halt();
                 }
             }
-        }catch (Halt $e){
-            Booking::delete($this->form->getModelInstance()->id);
-        // Obtener datos necesarios
-            Notification::make()
-                ->danger()
-                ->title('No se pudieron realizar la reserva')
-                ->body('No hay Cupos disponibles para la fecha y horario seleccionado.')
-                ->send();
-        }
+    }
+    protected function afterCreate(): void{
+
+        $this->form->getModelInstance()->timeSlots()->attach($this->form->getState()['timeSlots']);
     }
 
 }
