@@ -3,8 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Core\UseCases\Locations\GetTimeSlotsByLocationId;
-use App\Filament\Resources\BookingResource\Pages;
-use App\Filament\Resources\BookingResource\RelationManagers;
+use App\Filament\Resources\BookingResource\Pages;;
 use App\Models\Booking;
 use App\Models\Location;
 use App\Models\User;
@@ -42,15 +41,12 @@ class BookingResource extends Resource
                 Forms\Components\Select::make('timeSlots')
                     ->relationship('timeSlots')
                     ->multiple()
-                    ->live()
-                    ->reactive()
                     ->label('Horario')
                     ->hidden(fn(Forms\Get $get) => $get('location_id') == null || $get('date') == null)
-                    ->preload()
                     ->options(function(Forms\Get $get) {
-                        if($get('location_id') && $get('date')) {
+                        if ($get('location_id') && $get('date')) {
                             return app(GetTimeSlotsByLocationId::class)
-                                ->execute(1, '2024-12-01');
+                                ->execute( (int)$get('location_id'), $get('date'));
                         }
                         return [];
                     })
@@ -64,6 +60,12 @@ class BookingResource extends Resource
                             ->label('Nombre'),
                         Forms\Components\TextInput::make('email')
                             ->label('Email'),
+                        Forms\Components\TextInput::make('password')
+                            ->label('Contraseña'),
+                        Forms\Components\TextInput::make('password_confirmation')
+                            ->label('Confirmar contraseña'),
+                        Forms\Components\TextInput::make('dni')
+                            ->label('DNI'),
                     ])
                     ->required(),
 
@@ -82,6 +84,7 @@ class BookingResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.name'),
                 Tables\Columns\TextColumn::make('user.email'),
+                Tables\Columns\TextColumn::make('people_count')->label('Cantidad de personas'),
                 Tables\Columns\TextColumn::make('timeSlots.start_time')
                 ->label('Hora de inicio')
                     ->badge(),

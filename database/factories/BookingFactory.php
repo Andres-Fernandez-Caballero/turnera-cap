@@ -23,8 +23,7 @@ class BookingFactory extends Factory
         return [
             'location_id' => Location::factory(),
             'user_id' => User::factory(),
-            'start_time' => $startTime,
-            'end_time' => $endTime,
+            'date' => $this->faker->date('now'),
             'people_count' => $this->faker->numberBetween(1, 20),
         ];
     }

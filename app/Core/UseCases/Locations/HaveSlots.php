@@ -2,36 +2,23 @@
 
 namespace App\Core\UseCases\Locations;
 
+use App\Models\Booking;
 use App\Models\Location;
+use Carbon\Carbon;
 
 class HaveSlots
 {
-    public function execute(int $locationId, $slot_id, date $date): bool
+    public function execute(int $location_id, int $slot_id, string $date, int $people_count): bool
     {
-        $location = Location::findOrFail($locationId);
-        $capacity = $location->capacity;
-
-
-
-        $currentCapacity = $location->bookings()->where('date', $date)
-            -timeSlots()->where('id', $slot_id)->first()->people_count;
-        $slot = TimeSlot::findOrFail($slot_id);
-
-        if (!$slot->is_active) {
-            return false;
-        }
-
-        $people_in_slot = $location->bookings()
-            ->where('date', $date)
+        $location = Location::findOrFail($location_id);
+        $dateCarbon = Carbon::parse($date)->format('Y-m-d');
+        $people_acumulated = Booking::where('location_id', $location_id)
+            ->where('date', $dateCarbon)
+            ->whereHas('timeSlots', fn($query) => $query->where('time_slots.id', $slot_id))
+            ->get()
             ->sum('people_count');
-
-        return $people_in_slot <= $capacity;
-
-        $persons = $location->timeSlots()
-
-            ->where('id', $slot_id)
-            ->sum('people_count');
-        return true;
+         var_dump($people_acumulated);
+        return $people_count <= ( $location->capacity - $people_acumulated );
     }
 
 }
