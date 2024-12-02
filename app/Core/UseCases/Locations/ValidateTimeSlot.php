@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Core\UseCases\Locations;
 
 use App\Models\Location;

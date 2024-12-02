@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\UseCases\Bookings\CreateBooking;
 use App\Models\Booking;
 use App\Models\Location;
+use App\Models\TimeSlot;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +14,7 @@ use Illuminate\Routing\Controllers\Middleware;
 
 class BookingApiController extends Controller implements HasMiddleware
 {
+    private CreateBooking $createBooking;
 
         /**
      * Get the middleware that should be assigned to the controller.
@@ -21,6 +24,10 @@ class BookingApiController extends Controller implements HasMiddleware
         return [
             new Middleware('auth:sanctum'),
         ];
+    }
+
+    public function __construct(CreateBooking $createBooking){
+        $this->createBooking = $createBooking;
     }
 
     /**
@@ -45,58 +52,25 @@ class BookingApiController extends Controller implements HasMiddleware
 
         static::validateRequest( $request, [
             'location_id' => 'required|exists:locations,id',
-            'time_slot_ids' => 'required|array',
+            'timeSlots' => 'required|array',
             'people_count' => 'required|integer|min:1',
         ] );
 
+        try{
+            $booking = $this->createBooking->execute(
+                $user->id,
+                $request->location_id,
+                $request->timeSlots,
+                $request->date,
+                $request->people_count
+            );
+            return response()->json($booking, 201);
 
-        $location = Location::findOrFail($request->location_id);
-
-        // Verificar si la locación tiene TimeSlots
-        if ($location->timeSlots->where('is_active', true)->isEmpty()) {
+        }catch(\Exception $e){
             return response()->json([
-                'message' => 'No se pueden crear reservas porque la locación no tiene horarios disponibles.',
+                'message' => $e->getMessage(),
             ], 422);
         }
-
-        // Verificar si el horario solicitado está dentro de un TimeSlot
-        $timeSlots = TimeSlot::whereIn('id', $request->time_slot_ids)
-            ->where('is_active', true)->get();
-
-        if($timeSlots->isEmpty()) {
-            return response()->json([
-                'message' => 'No se pueden crear reservas porque el horario solicitado no está disponible.',
-            ], 422);
-        }
-
-        $timeSlots->each(function ($timeSlot) use ($request) {
-            $timeSlot->validateTimeSlot($request);
-        });
-
-        // Verificar capacidad
-        $overlapBookings = $location->bookings()
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('start_time', [$request->start_time, $request->end_time])
-                    ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
-                    ->orWhere(function ($query) use ($request) {
-                        $query->where('start_time', '<=', $request->start_time)
-                            ->where('end_time', '>=', $request->end_time);
-                    });
-            })
-            ->sum('people_count');
-
-
-        if ($overlapBookings + $request->people_count > $location->capacity) {
-            return response()->json([
-                'message' => 'Capacidad excedida para este horario.',
-            ], 422);
-        }
-
-        $request['user_id'] = $user->id;
-        // Crear reserva
-        $booking = Booking::create($request->all());
-
-        return response()->json($booking, 201);
     }
 
     /**
