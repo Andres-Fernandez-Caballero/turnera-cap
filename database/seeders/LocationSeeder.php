@@ -30,25 +30,26 @@ class LocationSeeder extends Seeder
         ]);
 
         DB::table('time_slots')->insert([
-            'location_id' => 1,
-            'day_of_week' => 1,
-            'start_time' => '10:00',
-            'end_time' => '11:00',
-            'cost_per_hour' => 1000,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-
-        ],
-        [
-            'location_id' => 1,
-            'day_of_week' => 1,
-            'start_time' => '11:00',
-            'end_time' => '12:00',
-            'cost_per_hour' => 1000,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+            [
+                'location_id' => 1,
+                'day_of_week' => 1,
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+                'cost_per_hour' => 1000,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'location_id' => 1,
+                'day_of_week' => 1,
+                'start_time' => '11:00',
+                'end_time' => '12:00',
+                'cost_per_hour' => 1000,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
         ]);
 
     }

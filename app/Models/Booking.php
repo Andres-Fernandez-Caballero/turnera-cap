@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Payments\Traits\HasPayment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ class Booking extends Model
 {
     /** @use HasFactory<\Database\Factories\BookingFactory> */
     use HasFactory;
+    use HasPayment;
 
     protected $fillable = [
         'location_id',
