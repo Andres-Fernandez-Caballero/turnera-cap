@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Core\UseCases\Bookings\CreateBooking;
+use App\Core\UseCases\Payments\CreateMercadoPagoPayment;
 use App\Models\Booking;
 use App\Models\Location;
 use App\Models\TimeSlot;
@@ -15,7 +16,7 @@ use Illuminate\Routing\Controllers\Middleware;
 class BookingApiController extends Controller implements HasMiddleware
 {
     private CreateBooking $createBooking;
-
+    private CreateMercadoPagoPayment $createMercadoPagoPayment;
         /**
      * Get the middleware that should be assigned to the controller.
      */
@@ -26,8 +27,11 @@ class BookingApiController extends Controller implements HasMiddleware
         ];
     }
 
-    public function __construct(CreateBooking $createBooking){
+    public function __construct(
+        CreateBooking $createBooking,
+        CreateMercadoPagoPayment $createMercadoPagoPayment ){
         $this->createBooking = $createBooking;
+        $this->createMercadoPagoPayment = $createMercadoPagoPayment;
     }
 
     /**
@@ -50,9 +54,12 @@ class BookingApiController extends Controller implements HasMiddleware
     {
         $user = $request->user();
 
+
+
         static::validateRequest( $request, [
             'location_id' => 'required|exists:locations,id',
             'timeSlots' => 'required|array',
+            'date' => 'required|date',
             'people_count' => 'required|integer|min:1',
         ] );
 
@@ -64,7 +71,17 @@ class BookingApiController extends Controller implements HasMiddleware
                 $request->date,
                 $request->people_count
             );
-            return response()->json($booking, 201);
+
+            $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
+
+                $preference = $this->createMercadoPagoPayment->execute(
+                "Reserva de pista",
+                $user,
+                $totalAmount,
+                $booking->toArray()
+            );
+            Log:info('init_point', [$preference->init_point]);
+            return response()->json(['init_point' => $preference->init_point ], 201);
 
         }catch(\Exception $e){
             return response()->json([

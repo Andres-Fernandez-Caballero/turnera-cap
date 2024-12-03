@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MercadoPagoController;
 use Illuminate\Support\Facades\Route;
+
+// Payments routes
+Route::post('/payments/webhooks/mercadopago', [MercadoPagoController::class, 'webhooks'])
+    ->name('payments.mercadopago.webhooks');
 
 // user routes
 Route::prefix("/auth")->group(function () {
