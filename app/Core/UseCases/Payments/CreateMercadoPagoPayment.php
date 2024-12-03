@@ -60,9 +60,9 @@ class CreateMercadoPagoPayment
                 'notification_url' => route('payments.mercadopago.webhooks'),
                 'auto_return' => "approved",
                 'back_urls' => [
-                    "success" => $url, // route('filament.member.pages.success-payment', ['tenant' => Filament::getTenant()]),
-                    "failure" => $url,  // route('filament.member.pages.rejected-payment', ['tenant' => Filament::getTenant()]),
-                    "pending" => $url //"{$url}/payments/pending/mercadopago",
+                    "success" => "{$url}/success", //filament.member.pages.success-payment', ['tenant' => Filament::getTenant()]),
+                    "failure" => "{$url}/failure",  // route('filament.member.pages.rejected-payment', ['tenant' => Filament::getTenant()]),
+                    "pending" => "{$url}/pending", //"{$url}/payments/pending/mercadopago",
                 ],
 
             ]);
