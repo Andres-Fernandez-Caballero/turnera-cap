@@ -14,6 +14,7 @@ Route::prefix("/auth")->group(function () {
 
 // Public routes
 Route::get('locations/{id}/availability',[\App\Http\Controllers\LocationApiController::class, 'getAvailability'])->name('locations.availability.get');
+
 Route::apiResource('locations', \App\Http\Controllers\LocationApiController::class)
 ->except('destroy','store','update');
 

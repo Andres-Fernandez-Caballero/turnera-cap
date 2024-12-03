@@ -30,7 +30,20 @@ class LocationResource extends Resource
                     ->label('Capacidad')
                     ->numeric()
                     ->minValue(1)
-                    ->required()
+                    ->required(),
+                
+                Forms\Components\TextInput::make('description')
+                    ->label('Descripción'),
+                        
+                Forms\Components\TextInput::make('address')
+                    ->label('Dirección'),
+                            
+                Forms\Components\TextInput::make('pavilion')
+                    ->label('Pabellon'),
+
+                Forms\Components\FileUpload::make('image')
+                    ->label('Imagen'),
+                
             ]);
     }
 
