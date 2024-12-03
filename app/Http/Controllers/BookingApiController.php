@@ -80,7 +80,7 @@ class BookingApiController extends Controller implements HasMiddleware
                 $totalAmount,
                 $booking->toArray()
             );
-            Log:info('init_point', [$preference->init_point]);
+            Log:info('init_point', [$preference->sandbox_init_point]);
             return response()->json(['init_point' => $preference->init_point ], 201);
 
         }catch(\Exception $e){
