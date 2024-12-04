@@ -54,7 +54,7 @@ class BookingApiController extends Controller implements HasMiddleware
     {
         $user = $request->user();
 
-
+        
 
         static::validateRequest( $request, [
             'location_id' => 'required|exists:locations,id',
@@ -78,7 +78,9 @@ class BookingApiController extends Controller implements HasMiddleware
                 "Reserva de pista",
                 $user,
                 $totalAmount,
-                $booking->toArray()
+                [
+                    'booking_id' => $booking->id
+                ]
             );
             Log:info('init_point', [$preference->sandbox_init_point]);
             return response()->json(['init_point' => $preference->init_point ], 201);

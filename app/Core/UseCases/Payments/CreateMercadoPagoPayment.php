@@ -15,70 +15,100 @@ class CreateMercadoPagoPayment
     public function execute(
         string $title, 
         User $user, 
-        float $amount,
-        array $metadata = [],
-        string $description = '',
+        float $amount, 
+        array $metadata = [], 
+        string $description = '', 
         string $currency = 'ARS'
-        ):Preference
-    {
+    ): Preference {
         $client = new PreferenceClient();
-        try{
-            $url = env('APP_URL');
-            $externalReference = "mercado-pago_".$user->id .'_'.time();        
+
+        // Log de datos enviados al método
+        
+        try {
+            // Generar referencia única
+            $timestamp = time();
+            $externalReference = "mercado-pago_{$user->id}_{$timestamp}";
+
+            Log::info('Mercado Pago Payment Creation Request', [
+                'title' => $title,
+                'description' => $description,
+                'amount' => $amount,
+                'currency' => $currency,
+                'reference' => $externalReference,
+                'metadata' => $metadata,
+                'hook' => route('payments.mercadopago.webhooks')
+            ]);
+    
+            // URL base
+            $url = env('APP_URL', 'http://localhost');
+
+            // Crear preferencia de pago
             $preference = $client->create([
                 'external_reference' => $externalReference,
+                
                 'items' => [
-                        [
-                            'title' => $title,
-                            'quantity' => 1,
-                            'unit_price' => $amount,
-                            'currency' => $currency,
-                        ]
+                    [
+                        'title' => $title,
+                        'quantity' => 1,
+                        'unit_price' => $amount,
+                        'currency' => $currency,
                     ],
-                    'metadata' => $metadata,
-                    'payer' => [
-                        'email' => $user->email,
-                        'name' => $user->name,
-                        'surname'=> $user->last_name,
-                        "identification" => [
-                        "type" => "DNI",
-                        "number" => $user->dni
-                        /*
-                        "phone" => [
-                            "area_code" => "11",
-                            "number" => "4444-4444"
-                        ],
-                        "address" => [
-                            "zip_code" => "1234",
-                            "street_name" => "Falsa",
-                            "street_number" => 123
-                        ]
-                        */
+                ],
+
+                'metadata' => $metadata,
+                'payer' => [
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'surname' => $user->last_name,
+                    'identification' => [
+                        'type' => 'DNI',
+                        'number' => $user->dni,
                     ],
-                    
                 ],
                 'notification_url' => route('payments.mercadopago.webhooks'),
-                'auto_return' => "approved",
+                'auto_return' => 'approved',
                 'back_urls' => [
-                    "success" => "{$url}/success", //filament.member.pages.success-payment', ['tenant' => Filament::getTenant()]),
-                    "failure" => "{$url}/failure",  // route('filament.member.pages.rejected-payment', ['tenant' => Filament::getTenant()]),
-                    "pending" => "{$url}/pending", //"{$url}/payments/pending/mercadopago",
+                    'success' => "{$url}/success",
+                    'failure' => "{$url}/failure",
+                    'pending' => "{$url}/pending",
                 ],
-
             ]);
 
+            // Validar que la preferencia se haya creado correctamente
+            if (!$preference || !isset($preference->init_point)) {
+                Log::error('Error creating Mercado Pago preference: Preference is null or missing init_point', ['response' => $preference]);
+                throw new PaymentException(
+                    'Error al crear la preferencia de pago.',
+                    500,
+                    PaymentMethod::MERCADO_PAGO
+                );
+            }
+
+            // Registrar el pago en la base de datos
             Payment::create([
                 'user_id' => $user->id,
                 'payment_method' => PaymentMethod::MERCADO_PAGO,
-                'currency'=> $currency,
+                'currency' => $currency,
                 'reference' => $externalReference,
                 'amount' => $amount,
-                'description'=> $description,
+                'description' => $description,
                 'title' => $title,
             ]);
-            Log::info('init_point', [$preference->init_point]);
+
+            // Log del init_point generado
+            Log::info('Mercado Pago init_point', [
+                'init_point' => $preference->init_point,
+                'sandbox_init_point' => $preference->sandbox_init_point ?? null,
+            ]);
+
             return $preference;
-        }catch(PaymentException $e){
+        } catch (\Exception $e) {
+            // Log del error y lanzamiento de excepción personalizada
+            Log::error('Error creating Mercado Pago payment', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             throw new PaymentException(
                 'Error al crear la preferencia de pago.',
                 500,
@@ -86,6 +116,5 @@ class CreateMercadoPagoPayment
                 [$e->getMessage()]
             );
         }
-
     }
 }

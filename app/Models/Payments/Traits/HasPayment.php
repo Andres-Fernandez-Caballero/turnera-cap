@@ -10,7 +10,7 @@ trait HasPayment
 {
     public function payment(): MorphOne
     {
-        return $this->morphMany(Payment::class,"payable");
+        return $this->morphOne(Payment::class,"payable");
     }    
 
     public function getPaymentStatusAttribute(): PaymentStatus
