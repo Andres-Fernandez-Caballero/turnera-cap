@@ -60,7 +60,7 @@ class BookingApiController extends Controller implements HasMiddleware
             'location_id' => 'required|exists:locations,id',
             'timeSlots' => 'required|array',
             'date' => 'required|date',
-            'people_count' => 'required|integer|min:1',
+            'invites' => 'required|array',
         ] );
 
         try{

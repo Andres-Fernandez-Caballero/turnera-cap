@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BookingResource\Pages;
 use App\Core\UseCases\Locations\HaveSlots;
 use App\Filament\Resources\BookingResource;
 use App\Models\Booking;
+use App\Models\User;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -21,9 +22,10 @@ class CreateBooking extends CreateRecord
         $slotsIds = $this->form->getState()['timeSlots'] ?? [];
         $locationId = $this->form->getState()['location_id'] ?? null;
         $date = $this->form->getState()['date'] ?? null;
-        $peopleCount = $this->form->getState()['people_count'] ?? null;
+        $invites = $this->form->getState()['invites'] ?? [];
+
         // Validar campos requeridos
-        if (!$locationId || !$date || !$peopleCount || empty($slotsIds)) {
+        if (!$locationId || !$date ||  empty($slotsIds)) {
             // Mostrar notificación de error
             Notification::make()
                 ->danger()
@@ -42,7 +44,7 @@ class CreateBooking extends CreateRecord
                 (int)$locationId,
                 (int)$slotId,
                 $date,
-                (int)$peopleCount
+                count($invites),
             );
 
             if (!$isAvailable) {
@@ -65,5 +67,16 @@ class CreateBooking extends CreateRecord
     {
         // Asociar los slots seleccionados a la reserva creada
         $this->form->getModelInstance()->timeSlots()->attach($this->form->getState()['timeSlots']);
+        
+        $user = User::findOrFail($this->form->getState()['user_id']);
+        
+        
+        $this->form->getModelInstance()->invites()->create([
+            'name' => $user->name, 
+            'last_name' => $user->last_name, 
+            'dni' => $user->dni
+        ]);
+
+        $this->form->getModelInstance()->invites()->createMany($this->form->getState()['invites']);
     }
 }

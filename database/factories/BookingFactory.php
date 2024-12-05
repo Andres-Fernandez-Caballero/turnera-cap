@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Location;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,12 +19,10 @@ class BookingFactory extends Factory
      */
     public function definition(): array
     {
-        $startTime = $this->faker->dateTimeBetween('now', '+1 week');
-        $endTime = (clone $startTime)->modify('+1 hour');
         return [
             'location_id' => Location::factory(),
             'user_id' => User::factory(),
-            'date' => $this->faker->date('now'),
+            'date' => Carbon::now()->format('Y-m-d'),
             'people_count' => $this->faker->numberBetween(1, 20),
         ];
     }

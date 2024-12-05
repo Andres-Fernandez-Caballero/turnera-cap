@@ -10,7 +10,7 @@ use InvalidArgumentException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
-class GetTimeSlotsByLocationId
+class GetFormatedTimeSlotByLocationId
 {
     private CountSlots $countSlots;
 
@@ -27,34 +27,37 @@ class GetTimeSlotsByLocationId
             if (!$dateObject || $dateObject->format('Y-m-d') !== $date) {
                 throw new InvalidArgumentException('La fecha debe tener el formato Y-m-d.');
             }
-    
+
             $dayOfWeek = $dateObject->dayOfWeek;
-    
+
             // Obtener TimeSlots activos para la locación y el día de la semana
             $timeSlots = TimeSlot::where('is_active', true)
                 ->where('day_of_week', $dayOfWeek)
                 ->where('location_id', $locationId)
                 ->get();
-    
-            // Obtener capacidad de la locación
+
+            
             $locationCapacity = Location::where('id', $locationId)->value('capacity');
-            Log::info('Capacidad total', ['capacity' => $locationCapacity]);
-    
-            // Filtrar y mapear los TimeSlots
+            Log::info('capacidad total', [$locationCapacity]);
+            // Retornar en formato esperado
             return $timeSlots
-                ->filter(function ($timeSlot) use ($date, $locationCapacity) {
-                    // Filtrar solo los timeSlots que cumplan con la capacidad
-                    return $this->countSlots->execute($timeSlot->id, $date) < $locationCapacity;
-                })
-                ->map(function ($timeSlot) {
-                    // Formatear los tiempos y devolver el formato deseado
-                    return [
-                        'timeSlot_id' => $timeSlot->id,
-                        'startTime' => Carbon::parse($timeSlot->start_time)->format('H:i'),
-                    ];
-                })
-                ->values() // Asegura índices consecutivos en el array resultante
-                ->toArray();
+    ->filter(function ($timeSlot) use ($date, $locationCapacity) {
+        // Filtrar solo los timeSlots que cumplan con la capacidad
+        return $this->countSlots->execute($timeSlot->id, $date) < $locationCapacity;
+    })
+    ->mapWithKeys(function ($timeSlot) {
+        // Formatear los tiempos a "H:i" (hora:minutos)
+        $startTime = Carbon::parse($timeSlot->start_time)->format('H:i');
+        $endTime = Carbon::parse($timeSlot->end_time)->format('H:i');
+        
+        // Mapear los timeSlots filtrados al formato deseado
+        return [
+            //$timeSlot->id => "de {$startTime} a {$endTime}",
+            $timeSlot->id => "{$startTime}",
+        ];
+    })
+    ->toArray();
+            
         } catch (InvalidArgumentException $e) {
             // Error específico de validación
             throw $e;
@@ -66,5 +69,4 @@ class GetTimeSlotsByLocationId
             throw new \RuntimeException('Ocurrió un error inesperado: ' . $e->getMessage());
         }
     }
-    
 }

@@ -39,10 +39,11 @@ class LocationApiControllerTest extends TestCase
 
     public function test_it_checks_availability_based_on_time_slots()
     {
+        // Arrange: Crear una locación con capacidad
         $location = Location::factory()->create(['capacity' => 20]);
-
-        // Crear dos TimeSlots
-        $location->timeSlots()->createMany([
+    
+        // Crear dos TimeSlots asociados a la locación
+        $timeSlots = $location->timeSlots()->createMany([
             [
                 'day_of_week' => 1, // Lunes
                 'start_time' => '08:00',
@@ -56,26 +57,25 @@ class LocationApiControllerTest extends TestCase
                 'cost_per_hour' => 1000,
             ],
         ]);
-
-        // Consultar disponibilidad para un lunes
+    
+        // Extraer los IDs de los TimeSlots creados
+        $timeSlotIds = $timeSlots->pluck('id');
+    
+        // Act: Consultar la API para verificar disponibilidad
         $response = $this->getJson("/api/locations/{$location->id}/availability?date=2024-11-18");
-
+    
+        // Assert: Verificar la respuesta
         $response->assertStatus(200)
             ->assertJsonFragment([
-                'start_time' => '08:00',
-                'end_time' => '12:00',
-                'available_capacity' => 20,
+                'timeSlot_id' => $timeSlotIds[0],
+                'startTime' => '08:00',
             ])
             ->assertJsonFragment([
-                'start_time' => '14:00',
-                'end_time' => '18:00',
-                'available_capacity' => 20,
-            ])
-            ->assertJsonMissing([
-                'start_time' => '12:00',
-                'end_time' => '14:00',
+                'timeSlot_id' => $timeSlotIds[1],
+                'startTime' => '14:00',
             ]);
     }
+    
 
     public function test_it_fails_to_check_availability_without_date_parameter()
     {

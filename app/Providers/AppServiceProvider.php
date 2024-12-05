@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Invite;
+use App\Observers\InviteObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 
@@ -21,5 +23,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if(env('FORCE_HTTPS', false)) URL::forceScheme('https');
+
+        // Observers
+        Invite::observe(InviteObserver::class);
     }
 }
