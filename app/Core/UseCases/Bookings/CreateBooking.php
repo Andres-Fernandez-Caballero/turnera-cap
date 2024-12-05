@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Invite;
 use App\Models\Location;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateBooking{
     private HaveSlots $haveSlots;
@@ -21,7 +22,7 @@ class CreateBooking{
         array $timeSlots, 
         string $date, 
         array $invites, // ['name' => string, 'last_name' => string, 'dni' => string ]
-        ){
+        ):Model {
         
             $user = User::findOrFail( $user_id );
             $cloned = array_merge([], $invites);

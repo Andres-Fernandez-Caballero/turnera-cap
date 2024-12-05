@@ -106,6 +106,7 @@ class BookingResource extends Resource
                 Tables\Columns\TextColumn::make('timeSlots.end_time')
                 ->label('Hora de fin')
                     ->badge(),
+                Tables\Columns\TextColumn::make('payment_status ')
 
             ])
             ->filters([

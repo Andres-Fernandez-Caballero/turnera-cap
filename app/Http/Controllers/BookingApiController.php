@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Core\UseCases\Bookings\CreateBooking;
 use App\Core\UseCases\Payments\CreateMercadoPagoPayment;
 use App\Models\Booking;
-use App\Models\Location;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -59,8 +58,9 @@ class BookingApiController extends Controller implements HasMiddleware
         static::validateRequest( $request, [
             'location_id' => 'required|exists:locations,id',
             'timeSlots' => 'required|array',
-            'date' => 'required|date',
+            'timeSlots.*' => 'exists:time_slots,id',
             'invites' => 'required|array',
+            'date' => 'required|date|after_or_equal:today',
         ] );
 
         try{
@@ -69,7 +69,7 @@ class BookingApiController extends Controller implements HasMiddleware
                 $request->location_id,
                 $request->timeSlots,
                 $request->date,
-                $request->people_count
+                $request->invites
             );
 
             $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
