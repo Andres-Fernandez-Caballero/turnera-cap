@@ -20,7 +20,7 @@ class MercadoPagoProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        MercadoPagoConfig::setAccessToken(env('MERCADOPAGO_ACCESS_TOKEN'));
+        MercadoPagoConfig::setAccessToken(env('MERCADOPAGO_ACCESS_TOKEN', ''));
         if(env('APP_ENV') === 'local') {
             MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::LOCAL);
         }

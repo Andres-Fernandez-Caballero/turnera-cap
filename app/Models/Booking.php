@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
@@ -18,7 +19,7 @@ class Booking extends Model
         'location_id',
         'user_id',
         'date',
-        'people_count',
+        'people_count', 
     ];
 
     public function location(): BelongsTo
@@ -34,5 +35,15 @@ class Booking extends Model
     public function timeSlots(): BelongsToMany
     {
         return $this->belongsToMany(TimeSlot::class);
+    }
+
+    public function invites(): HasMany
+    {
+        return $this->hasMany(Invite::class);
+    }
+
+    public function getPeopleCountAttribute(): int
+    {
+        return $this->invites()->count();
     }
 }

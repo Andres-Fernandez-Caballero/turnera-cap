@@ -2,30 +2,25 @@
 
 namespace App\Http\Controllers;
 
-
-use App\Core\UseCases\Locations\AddTimeSlot;
-use App\Core\UseCases\Locations\CreateLocation;
-use App\Core\UseCases\Locations\DeleteLocation;
-use App\Core\UseCases\Locations\GetAvailability;
+use App\Core\UseCases\Locations\GetTimeSlotsByLocationId;
 use App\Core\UseCases\Locations\ListLocations;
 use App\Core\UseCases\Locations\ShowLocation;
-use App\Core\UseCases\Locations\UpdateLocation;
 use Illuminate\Http\Request;
 
 class LocationApiController extends Controller
 {
     private ListLocations $listLocations;
     private ShowLocation $showLocation;
-    private GetAvailability $getAvailability;
+    private GetTimeSlotsByLocationId $timeSlotsByLocationId;
     public function __construct(
         ListLocations $listLocations,
         ShowLocation $showLocation,
-        GetAvailability $getAvailability,
+        GetTimeSlotsByLocationId $timeSlotsByLocationId
     )
     {
         $this->listLocations = $listLocations;
         $this->showLocation = $showLocation;
-        $this->getAvailability = $getAvailability;
+        $this->timeSlotsByLocationId = $timeSlotsByLocationId;
     }
     /**
      * Display a listing of the resource.
@@ -62,7 +57,8 @@ class LocationApiController extends Controller
             ], 422);
         }
 
-        $availability = $this->getAvailability->execute($id, $date);
-        return response()->json($availability, 200);
+        $slotsAvailables = $this->timeSlotsByLocationId->execute($id, $date);
+        
+        return response()->json($slotsAvailables, 200);
     }
 }
