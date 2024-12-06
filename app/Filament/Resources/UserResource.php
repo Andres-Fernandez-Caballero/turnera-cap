@@ -24,7 +24,15 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\TextInput::make('name')
+                    ->label('Nombre'),
+                Forms\Components\TextInput::make('email')
+                    ->label('Email'),
+                Forms\Components\TextInput::make('password')
+                    ->label('Contraseña'),
+                
+                Forms\Components\TextInput::make('dni')
+                    ->label('DNI'),
             ]);
     }
 
@@ -34,6 +42,7 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name'),
                 TextColumn::make('email'),
+                TextColumn::make('dni'),
             ])
             ->filters([
                 //
