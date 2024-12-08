@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
@@ -18,8 +19,21 @@ class Booking extends Model
         'location_id',
         'user_id',
         'date',
-        'people_count',
+        'people_count', 
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($booking) {            
+            if ($booking->payment()->exists()) {
+                $booking->payment()->delete();
+            }
+            // Puedes lanzar una excepción si quieres impedir la eliminación.
+            // throw new \Exception('No se puede eliminar este booking.');
+        });
+    }
 
     public function location(): BelongsTo
     {
@@ -34,5 +48,15 @@ class Booking extends Model
     public function timeSlots(): BelongsToMany
     {
         return $this->belongsToMany(TimeSlot::class);
+    }
+
+    public function invites(): HasMany
+    {
+        return $this->hasMany(Invite::class);
+    }
+
+    public function getPeopleCountAttribute(): int
+    {
+        return $this->invites()->count();
     }
 }

@@ -29,15 +29,19 @@ class HaveSlotsTest extends TestCase
         $booking = Booking::factory()->create([
             'location_id' => $location->id,
             'date' => '2024-12-02',
-            'people_count' => 20,
+        ]);
+
+        $booking->invites()->create([
+            'name' => 'test',
+            'last_name' => 'test',
+            'dni' => '123456789',
         ]);
 
 
         $booking->timeSlots()->attach([$slotId]);
-        $peopleCount = 20;
+        $peopleCount = 1;
 
         $useCase = new HaveSlots();
-
         // Act
         $result = $useCase->execute($location->id, $slotId, '2024-12-02', $peopleCount);
 
@@ -48,40 +52,50 @@ class HaveSlotsTest extends TestCase
     public function test_location_does_not_have_enough_capacity()
     {
         // Arrange
-        $location = Location::factory()->create(['name' => 'test', 'capacity' => 30]);
-        $slot = TimeSlot::factory()->create([
-            'location_id' => $location->id,
+        $location = Location::factory()->create([
+            'capacity' => 1, // La capacidad de la locación es 1
+        ]);
+    
+        $slot = $location->timeSlots()->create([
             'day_of_week' => 1,
             'start_time' => '10:00:00',
             'end_time' => '11:00:00',
             'cost_per_hour' => 10,
         ]);
-
-        $booking1 = Booking::factory()->create([
+    
+        $booking = Booking::factory()->create([
             'location_id' => $location->id,
             'date' => '2024-12-02',
-            'people_count' => 25,
         ]);
-        $booking1->timeSlots()->attach([$slot->id]);
-
-        $booking2 = Booking::factory()->create([
-            'location_id' => $location->id,
-            'date' => '2024-12-02',
-            'people_count' => 5,
+    
+        // Crea un invitado para consumir la capacidad
+        $booking->invites()->create([
+            'name' => 'Test',
+            'last_name' => 'User',
+            'dni' => '123456789',
         ]);
-        $booking2->timeSlots()->attach([$slot->id]);
-        $peopleCount = 10;
-
-        $useCase = new HaveSlots();
-
-        var_dump($slot->bookings->count());
-
+    
+        // Asocia el booking al slot creado
+        $booking->timeSlots()->attach([$slot->id]);
+    
+        // La cantidad de personas excede la capacidad
+        $peopleCount = 2;
+    
+        // Mock del caso de uso para verificar disponibilidad
+        $useCase = app(HaveSlots::class); // Asegúrate de que HaveSlots esté configurado en el contenedor de servicios
+    
         // Act
-        $result = $useCase->execute($location->id, $slot->id, '2024-12-02', $peopleCount);
-
+        $result = $useCase->execute(
+            $location->id,
+            $slot->id,
+            '2024-12-02',
+            $peopleCount
+        );
+    
         // Assert
-        $this->assertFalse($result);
+        $this->assertFalse($result); // Debe retornar falso porque no hay suficiente capacidad
     }
+    
 
     public function test_location_not_found_throws_exception()
     {

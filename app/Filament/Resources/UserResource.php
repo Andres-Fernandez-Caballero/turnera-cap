@@ -6,6 +6,8 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -24,7 +26,21 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                //
+                TextInput::make('name')
+                ->required()
+                ->label('Nombre'),
+                TextInput::make('last_name')
+                ->label('Apellido'),
+                TextInput::make('dni')
+                ->required()
+                ->label('DNI'),
+                TextInput::make('phone')
+                ->label('Telefono'),
+                DatePicker::make('birth_date')
+                ->label('Fecha de nacimiento'),
+                TextInput   ::make('email')
+                ->email()
+                ->required(),
             ]);
     }
 

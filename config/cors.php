@@ -1,5 +1,7 @@
 <?php
 
+
+
 return [
 
     /*
@@ -19,7 +21,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:8081', 'http://user-client'],
+    'allowed_origins' => [env('CLIENT_URL', 'http://localhost:8081') , ],
 
     'allowed_origins_patterns' => [],
 

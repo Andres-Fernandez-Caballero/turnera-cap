@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Core\UseCases\Locations\GetFormatedTimeSlotByLocationId;
 use App\Core\UseCases\Locations\GetTimeSlotsByLocationId;
 use App\Filament\Resources\BookingResource\Pages;;
 use App\Models\Booking;
@@ -46,7 +47,7 @@ class BookingResource extends Resource
                     ->hidden(fn(Forms\Get $get) => $get('location_id') == null || $get('date') == null)
                     ->options(function(Forms\Get $get) {
                         if ($get('location_id') && $get('date')) {
-                            return app(GetTimeSlotsByLocationId::class)
+                            return app(GetFormatedTimeSlotByLocationId::class)
                                 ->execute( (int)$get('location_id'), $get('date'));
                         }
                         return [];
@@ -70,12 +71,15 @@ class BookingResource extends Resource
                     ])
                     ->required(),
 
-                Forms\Components\TextInput::make('people_count')
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(fn(Location $location) => $location->capacity)
-                    ->required()
-                    ->label('Cantidad de personas'),
+                Forms\Components\Repeater::make('invites')
+                    ->label('Cantidad de personas')
+                    ->schema([
+                        Forms\Components\TextInput::make('name'),
+                        Forms\Components\TextInput::make('last_name'),
+                        Forms\Components\TextInput::make('dni'),
+                    ]),
+                    
+                    
             ]);
     }
 
@@ -102,6 +106,7 @@ class BookingResource extends Resource
                 Tables\Columns\TextColumn::make('timeSlots.end_time')
                 ->label('Hora de fin')
                     ->badge(),
+                Tables\Columns\TextColumn::make('payment_status ')
 
             ])
             ->filters([

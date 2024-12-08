@@ -20,11 +20,8 @@ class CreateMercadoPagoPayment
         string $description = '', 
         string $currency = 'ARS'
     ): Preference {
-        $client = new PreferenceClient();
-
-        // Log de datos enviados al método
-        
         try {
+            $client = new PreferenceClient();
             // Generar referencia única
             $timestamp = time();
             $externalReference = "mercado-pago_{$user->id}_{$timestamp}";
@@ -111,7 +108,7 @@ class CreateMercadoPagoPayment
 
             throw new PaymentException(
                 'Error al crear la preferencia de pago.',
-                500,
+                490,
                 PaymentMethod::MERCADO_PAGO,
                 [$e->getMessage()]
             );

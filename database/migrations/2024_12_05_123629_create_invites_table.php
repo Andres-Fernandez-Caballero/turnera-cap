@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_data', function (Blueprint $table) {
+        Schema::create('invites', function (Blueprint $table) {
             $table->id();
-            $table->string('dni', 10)->unique()->nullable();
-            $table->string('address')->nullable();
-            $table->string('phone')->nullable();
-            $table->date('birth_date')->nullable();
-            $table->foreignId('user_id')->constrained();
+            $table->string('name');
+            $table->string('last_name');
+            $table->string('dni');
             $table->timestamps();
+            $table->foreignId('booking_id')->constrained()->onDelete('cascade');
+
         });
     }
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_data');
+        Schema::dropIfExists('invites');
     }
 };
