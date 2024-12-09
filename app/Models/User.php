@@ -4,6 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Payments\Traits\HasPayments;
+use App\Models\Traits\HasCapitalizeLastName;
+use App\Models\Traits\HasCapitalizeName;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -17,6 +20,7 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, HasApiTokens;
     use HasPayments;
+    use HasCapitalizeName, HasCapitalizeLastName;
     /**
      * The attributes that are mass assignable.
      *
@@ -26,6 +30,9 @@ class User extends Authenticatable
         'name',
         'last_name',
         'dni',
+        'address',
+        'phone',
+        'birth_date',
         'email',
         'password',
     ];
@@ -59,8 +66,8 @@ class User extends Authenticatable
         ];
     }
 
-    public function userData():HasOne
+    public function setEmailAttribute(string $value): void
     {
-        return $this->hasOne(UserData::class);
+        $this->attributes['email'] = strtolower($value);
     }
 }

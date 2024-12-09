@@ -22,6 +22,19 @@ class Booking extends Model
         'people_count', 
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($booking) {            
+            if ($booking->payment()->exists()) {
+                $booking->payment()->delete();
+            }
+            // Puedes lanzar una excepción si quieres impedir la eliminación.
+            // throw new \Exception('No se puede eliminar este booking.');
+        });
+    }
+
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);

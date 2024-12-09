@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Core\UseCases\Bookings\CreateBooking;
+use App\Core\UseCases\Bookings\ListBookingsByUser;
 use App\Core\UseCases\Payments\CreateMercadoPagoPayment;
 use App\Models\Booking;
+use App\Models\Payments\Payment;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class BookingApiController extends Controller implements HasMiddleware
 {
+    private ListBookingsByUser $listBookingsByUser;
     private CreateBooking $createBooking;
     private CreateMercadoPagoPayment $createMercadoPagoPayment;
-        /**
+    /**
      * Get the middleware that should be assigned to the controller.
      */
     public static function middleware(): array
@@ -27,8 +30,11 @@ class BookingApiController extends Controller implements HasMiddleware
     }
 
     public function __construct(
+        ListBookingsByUser $listBookingsByUser,
         CreateBooking $createBooking,
-        CreateMercadoPagoPayment $createMercadoPagoPayment ){
+        CreateMercadoPagoPayment $createMercadoPagoPayment
+    ) {
+        $this->listBookingsByUser = $listBookingsByUser;
         $this->createBooking = $createBooking;
         $this->createMercadoPagoPayment = $createMercadoPagoPayment;
     }
@@ -38,12 +44,17 @@ class BookingApiController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $booking = Booking::with('location', 'timeSlots')
-            ->get();
-
-        return response()
-            ->json($booking, 200);
+        try{
+            $user = $request->user();        
+            $bookings = $this->listBookingsByUser->execute($user);
+    
+            return response()
+                ->json($bookings, 200);
+        }catch(\Exception $e){
+            return response()->json([
+                'message'=> "No se pudieron cargar las reservas, pruebe mas tarde",
+            ], 400);
+        }
     }
 
     /**
@@ -51,19 +62,23 @@ class BookingApiController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
-        $user = $request->user();
 
-        
+        try {
+            $user = $request->user();
 
-        static::validateRequest( $request, [
-            'location_id' => 'required|exists:locations,id',
-            'timeSlots' => 'required|array',
-            'timeSlots.*' => 'exists:time_slots,id',
-            'invites' => 'required|array',
-            'date' => 'required|date|after_or_equal:today',
-        ] );
+            if (!$user) {
+                throw new \Exception('No user found');
+            }
 
-        try{
+            static::validateRequest($request, [
+                'location_id' => 'required|exists:locations,id',
+                'timeSlots' => 'required|array',
+                'invites' => 'array',
+                'date' => 'required|date|after_or_equal:today',
+            ]);
+
+
+            DB::beginTransaction();
             $booking = $this->createBooking->execute(
                 $user->id,
                 $request->location_id,
@@ -74,7 +89,7 @@ class BookingApiController extends Controller implements HasMiddleware
 
             $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
 
-                $preference = $this->createMercadoPagoPayment->execute(
+            $preference = $this->createMercadoPagoPayment->execute(
                 "Reserva de pista",
                 $user,
                 $totalAmount,
@@ -82,10 +97,16 @@ class BookingApiController extends Controller implements HasMiddleware
                     'booking_id' => $booking->id
                 ]
             );
-            Log:info('init_point', [$preference->sandbox_init_point]);
-            return response()->json(['init_point' => $preference->init_point ], 201);
-
-        }catch(\Exception $e){
+            $payment = Payment::find($preference['payment_id']);
+            $booking->payment()->save($payment);
+            
+            if (!$preference) {
+                throw new \Exception('Error generando Pago');
+            }
+            DB::commit();
+            return response()->json(['init_point' => $preference['init_point']], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage(),
             ], 422);
@@ -108,13 +129,14 @@ class BookingApiController extends Controller implements HasMiddleware
     {
         $booking = Booking::findOrFail($id);
 
-        static::validateRequest( $request,
-        [
-            'start_time' => 'sometimes|date|before:end_time',
-            'end_time' => 'sometimes|date|after:start_time',
-            'people_count' => 'sometimes|integer|min:1',
-        ]
-    );
+        static::validateRequest(
+            $request,
+            [
+                'start_time' => 'sometimes|date|before:end_time',
+                'end_time' => 'sometimes|date|after:start_time',
+                'people_count' => 'sometimes|integer|min:1',
+            ]
+        );
 
 
         $booking->update($request->all());
@@ -134,9 +156,9 @@ class BookingApiController extends Controller implements HasMiddleware
 
     private static function validateRequest(Request $request, array $rules = [])
     {
-        $validator = Validator::make($request->all(),$rules);
-        if( $validator->fails() ) {
-            return response()->json($validator->errors(), 405);
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            throw new \Illuminate\Validation\ValidationException($validator);
         }
     }
 }

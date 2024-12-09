@@ -8,7 +8,6 @@ use App\Models\Payments\PaymentException;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use MercadoPago\Client\Preference\PreferenceClient;
-use MercadoPago\Resources\Preference;
 
 class CreateMercadoPagoPayment
 {
@@ -19,12 +18,9 @@ class CreateMercadoPagoPayment
         array $metadata = [], 
         string $description = '', 
         string $currency = 'ARS'
-    ): Preference {
-        $client = new PreferenceClient();
-
-        // Log de datos enviados al método
-        
+    ): array {
         try {
+            $client = new PreferenceClient();
             // Generar referencia única
             $timestamp = time();
             $externalReference = "mercado-pago_{$user->id}_{$timestamp}";
@@ -85,7 +81,7 @@ class CreateMercadoPagoPayment
             }
 
             // Registrar el pago en la base de datos
-            Payment::create([
+            $payment = Payment::create([
                 'user_id' => $user->id,
                 'payment_method' => PaymentMethod::MERCADO_PAGO,
                 'currency' => $currency,
@@ -97,11 +93,17 @@ class CreateMercadoPagoPayment
 
             // Log del init_point generado
             Log::info('Mercado Pago init_point', [
+                'id'=>$preference->id,
                 'init_point' => $preference->init_point,
                 'sandbox_init_point' => $preference->sandbox_init_point ?? null,
             ]);
 
-            return $preference;
+            return [
+                'preference_id' => $preference->id,
+                'init_point' => $preference->init_point,
+                'sandbox_init_point' => $preference->sandbox_init_point ?? null,
+                'payment_id' => $payment->id,
+            ];
         } catch (\Exception $e) {
             // Log del error y lanzamiento de excepción personalizada
             Log::error('Error creating Mercado Pago payment', [
@@ -111,7 +113,7 @@ class CreateMercadoPagoPayment
 
             throw new PaymentException(
                 'Error al crear la preferencia de pago.',
-                500,
+                490,
                 PaymentMethod::MERCADO_PAGO,
                 [$e->getMessage()]
             );
