@@ -63,7 +63,7 @@
                 static::validateRequest( $request, [
                     'location_id' => 'required|exists:locations,id',
                     'timeSlots' => 'required|array',
-                    'invites' => 'required|array',
+                    'invites' => 'array',
                     'date' => 'required|date|after_or_equal:today',
                     ] );
                 
