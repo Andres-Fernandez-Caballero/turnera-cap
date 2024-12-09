@@ -3,8 +3,12 @@
 namespace App\Filament\Resources\BookingResource\Pages;
 
 use App\Core\UseCases\Locations\HaveSlots;
+use App\Core\UseCases\Payments\CreateAdminPayment;
 use App\Filament\Resources\BookingResource;
 use App\Models\Booking;
+use App\Models\Payments\Enums\PaymentMethod;
+use App\Models\Payments\Enums\PaymentStatus;
+use App\Models\Payments\Payment;
 use App\Models\User;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -67,16 +71,24 @@ class CreateBooking extends CreateRecord
     {
         // Asociar los slots seleccionados a la reserva creada
         $this->form->getModelInstance()->timeSlots()->attach($this->form->getState()['timeSlots']);
-        
+
         $user = User::findOrFail($this->form->getState()['user_id']);
-        
-        
+
+
         $this->form->getModelInstance()->invites()->create([
-            'name' => $user->name, 
-            'last_name' => $user->last_name, 
+            'name' => $user->name,
+            'last_name' => $user->last_name,
             'dni' => $user->dni
         ]);
 
         $this->form->getModelInstance()->invites()->createMany($this->form->getState()['invites']);
+
+        $payment = app(CreateAdminPayment::class)->execute(
+            $user,
+            (int)$this->form->getModelInstance()->sum('cost_per_hour'),
+            'Reserva de pista',
+        );
+
+        $this->form->getModelInstance()->payment()->save($payment);
     }
 }
