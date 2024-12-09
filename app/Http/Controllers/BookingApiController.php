@@ -104,7 +104,8 @@ class BookingApiController extends Controller implements HasMiddleware
                 throw new \Exception('Error generando Pago');
             }
             DB::commit();
-            return response()->json(['init_point' => $preference['init_point']], 201);
+            return response()
+                ->json(['init_point' => env('SANDBOX', false) == false? $preference['init_point'] : $preference['sandbox_init_point'] ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
