@@ -5,12 +5,18 @@ namespace App\Filament\Resources;
 use App\Core\UseCases\Locations\GetFormatedTimeSlotByLocationId;
 use App\Core\UseCases\Locations\GetTimeSlotsByLocationId;
 use App\Filament\Resources\BookingResource\Pages;;
+
 use App\Models\Booking;
 use App\Models\Location;
+use App\Models\Payments\Enums\PaymentStatus;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
@@ -36,7 +42,7 @@ class BookingResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('location_id')
                     ->label('Locación')
-                    ->options(fn () => Location::all()->pluck('name', 'id'))
+                    ->options(fn() => Location::all()->pluck('name', 'id'))
                     ->live()
                     ->required(),
                 Forms\Components\Select::make('timeSlots')
@@ -45,10 +51,10 @@ class BookingResource extends Resource
                     ->live()
                     ->label('Horario')
                     ->hidden(fn(Forms\Get $get) => $get('location_id') == null || $get('date') == null)
-                    ->options(function(Forms\Get $get) {
+                    ->options(function (Forms\Get $get) {
                         if ($get('location_id') && $get('date')) {
                             return app(GetFormatedTimeSlotByLocationId::class)
-                                ->execute( (int)$get('location_id'), $get('date'));
+                                ->execute((int)$get('location_id'), $get('date'));
                         }
                         return [];
                     })
@@ -56,7 +62,7 @@ class BookingResource extends Resource
                 Forms\Components\Select::make('user_id')
                     ->relationship('user')
                     ->label('Usuario')
-                    ->options(fn () => User::all()->pluck('name', 'id'))
+                    ->options(fn() => User::all()->pluck('name', 'id'))
                     ->createOptionForm([
                         Forms\Components\TextInput::make('name')
                             ->label('Nombre'),
@@ -78,8 +84,8 @@ class BookingResource extends Resource
                         Forms\Components\TextInput::make('last_name'),
                         Forms\Components\TextInput::make('dni'),
                     ]),
-                    
-                    
+
+
             ]);
     }
 
@@ -88,23 +94,23 @@ class BookingResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
-                ->label('Nombre'),
+                    ->label('Nombre'),
 
                 Tables\Columns\TextColumn::make('user.email')
-                ->label('Email'),
+                    ->label('Email'),
 
                 Tables\Columns\TextColumn::make('people_count')
-                ->label('Cantidad de personas'),
+                    ->label('Cantidad de personas'),
 
                 Tables\Columns\TextColumn::make('date')
-                ->label('Fecha'),
+                    ->label('Fecha'),
 
                 Tables\Columns\TextColumn::make('timeSlots.start_time')
-                ->label('Hora de inicio')
+                    ->label('Hora de inicio')
                     ->badge(),
 
                 Tables\Columns\TextColumn::make('timeSlots.end_time')
-                ->label('Hora de fin')
+                    ->label('Hora de fin')
                     ->badge(),
                 Tables\Columns\TextColumn::make('payment_status ')
 
@@ -115,6 +121,46 @@ class BookingResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('invites_data')
+                    ->infolist([
+                        RepeatableEntry::make('invites')
+                            ->schema([
+                                TextEntry::make('name'),
+                                TextEntry::make('last_name'),
+                                TextEntry::make('dni')
+                                    ->columnSpan(2),
+                            ])
+                            ->columns(2)
+                    ]),
+
+                Tables\Actions\Action::make('payment_data')
+                    ->label('Factura')
+                    ->recordTitle('Factura')
+                    ->infolist([
+                        Grid::make()
+                            ->schema([
+                                TextEntry::make('payment.payment_method')
+                                    ->label('Medio de pago'),
+
+                                TextEntry::make('payment_status')
+                                    ->label('Estado')
+                                    ->weight(FontWeight::Bold)
+                                    ->color(fn(PaymentStatus $state) => match ($state) {
+                                        PaymentStatus::PENDING => 'warning',
+                                        PaymentStatus::APPROVED => 'success',
+                                        PaymentStatus::REJECTED => 'danger'
+                                    }),
+                                TextEntry::make('payment.reference')
+                                    ->label('Referencia'),
+                                TextEntry::make('payment.payment_code')
+                                    ->label('Codigo de pago'),
+                                TextEntry::make('payment.amount')
+                                    ->prefix('ARS $ ')
+                                    ->label('Total')
+                                    ->weight(FontWeight::Bold),
+                            ])
+                            ->columns(2),
+                    ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

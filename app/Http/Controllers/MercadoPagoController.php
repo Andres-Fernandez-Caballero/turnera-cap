@@ -67,9 +67,6 @@ class MercadoPagoController extends Controller
                 $payment->payment_code = $dataId;
                 $payment->save();
 
-                $booking = Booking::find($httpResponse->json()['metadata']['booking_id']);
-                $booking->payment()->save($payment);
-
                 Log::info('Pago actualizado correctamente:', ['payment' => $payment]);
                 DB::commit();
             } catch (\Exception $e) {
@@ -83,12 +80,29 @@ class MercadoPagoController extends Controller
 
     protected function reject($dataId, $httpResponse): void
     {
-        $booking = Booking::findOrFail($httpResponse->json()['metadata']['booking_id']);
-        $booking->delete();
+        $reference = $httpResponse->json()['external_reference'];
+        $payment = Payment::where('reference', $reference)->first();
+
+        if ($payment) {
+            try {
+                DB::beginTransaction();
+                $payment->status = PaymentStatus::REJECTED;
+                //$payment->payment_code = $dataId;
+                $payment->save();
+
+                Log::info('Pago rechazado:', ['payment' => $payment]);
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('PAYMENT_ERROR_APPROVED_WEBHOOK', [$e->getMessage()]);
+            }
+        } else {
+            Log::error('No se encontró un pago con la referencia proporcionada.', ['reference' => $reference]);
+        }
     }
 
     protected function pending():void
     {
-
+        // logic here
     }
 }
