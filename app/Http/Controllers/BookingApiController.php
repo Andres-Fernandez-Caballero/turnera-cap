@@ -3,19 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Core\UseCases\Bookings\CreateBooking;
+use App\Core\UseCases\Bookings\ListBookingsByUser;
 use App\Core\UseCases\Payments\CreateMercadoPagoPayment;
 use App\Models\Booking;
 use App\Models\Payments\Payment;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
 class BookingApiController extends Controller implements HasMiddleware
 {
+    private ListBookingsByUser $listBookingsByUser;
     private CreateBooking $createBooking;
     private CreateMercadoPagoPayment $createMercadoPagoPayment;
     /**
@@ -29,9 +30,11 @@ class BookingApiController extends Controller implements HasMiddleware
     }
 
     public function __construct(
+        ListBookingsByUser $listBookingsByUser,
         CreateBooking $createBooking,
         CreateMercadoPagoPayment $createMercadoPagoPayment
     ) {
+        $this->listBookingsByUser = $listBookingsByUser;
         $this->createBooking = $createBooking;
         $this->createMercadoPagoPayment = $createMercadoPagoPayment;
     }
@@ -41,12 +44,17 @@ class BookingApiController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $booking = Booking::with('location', 'timeSlots')
-            ->get();
-
-        return response()
-            ->json($booking, 200);
+        try{
+            $user = $request->user();        
+            $bookings = $this->listBookingsByUser->execute($user);
+    
+            return response()
+                ->json($bookings, 200);
+        }catch(\Exception $e){
+            return response()->json([
+                'message'=> "No se pudieron cargar las reservas, pruebe mas tarde",
+            ], 400);
+        }
     }
 
     /**
