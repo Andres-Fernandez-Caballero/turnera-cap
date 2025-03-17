@@ -1,66 +1,130 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Turnos - CAP
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este es un sistema de gestión de turnos para una pista de patinaje, desarrollado con **Laravel** y **Filament** como panel de administración. Se ejecuta con **Laravel Sail** para un entorno basado en Docker y proporciona una **API REST** consumida por un proyecto frontend independiente.
 
-## About Laravel
+![image](https://github.com/user-attachments/assets/3327316b-57be-49ab-acc1-6619677ee485)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tecnologías utilizadas
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Laravel 11
+- Filament Admin Panel
+- Laravel Sail (Docker)
+- MySQL
+- API REST
+- Autenticación con Laravel Sanctum
 
-## Learning Laravel
+## Requisitos previos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Asegúrate de tener instalado:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- Docker y Docker Compose
+- Make (opcional, para facilitar comandos)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalación
 
-## Laravel Sponsors
+Clona el repositorio y accede a la carpeta del proyecto:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```sh
+git clone https://github.com/tu-usuario/turnos-cap.git
+cd turnos-cap
+```
 
-### Premium Partners
+### 1. Iniciar Laravel Sail
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+Si usas **Makefile** (opcional):
+```sh
+make up
+```
 
-## Contributing
+O manualmente con Docker:
+```sh
+./vendor/bin/sail up -d
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2. Instalar dependencias
 
-## Code of Conduct
+```sh
+./vendor/bin/sail composer install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Configurar entorno
 
-## Security Vulnerabilities
+Copia el archivo de configuración:
+```sh
+cp .env.example .env
+```
+Genera la clave de la aplicación:
+```sh
+./vendor/bin/sail artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4. Migrar y poblar la base de datos
 
-## License
+```sh
+./vendor/bin/sail artisan migrate --seed
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 5. Crear usuario administrador para Filament
+
+```sh
+./vendor/bin/sail artisan make:filament-user
+```
+
+### 6. Acceder a Filament Admin Panel
+
+Visita [http://localhost/admin](http://localhost/admin) e inicia sesión con las credenciales creadas.
+
+---
+
+## API REST
+
+La aplicación expone una API REST para gestionar turnos, la cual es consumida por el frontend.
+
+### Endpoints principales
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | /api/locations | Listar ubicaciones |
+| GET | /api/locations/{id} | Obtener detalles de una ubicación |
+| POST | /api/locations | Crear una nueva ubicación |
+| PUT | /api/locations/{id} | Actualizar una ubicación |
+| DELETE | /api/locations/{id} | Eliminar una ubicación |
+
+Para más detalles, consulta la documentación de la API.
+
+---
+
+## Proyecto frontend
+
+Este backend es consumido por un proyecto App-pista (expo app) que puedes encontrar en:
+
+[https://github.com/tu-usuario/turnos-cap-frontend]([https://github.com/tu-usuario/turnos-cap-frontend](https://github.com/PabloGabrielDonato/app-pista))
+
+---
+
+## Comandos útiles
+
+- **Subir contenedores**:
+  ```sh
+  ./vendor/bin/sail up -d
+  ```
+- **Bajar contenedores**:
+  ```sh
+  ./vendor/bin/sail down
+  ```
+- **Ejecutar migraciones**:
+  ```sh
+  ./vendor/bin/sail artisan migrate --seed
+  ```
+- **Acceder a la base de datos MySQL**:
+  ```sh
+  ./vendor/bin/sail mysql
+  ```
+
+---
+
+## Licencia
+
+Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para más información.
+
