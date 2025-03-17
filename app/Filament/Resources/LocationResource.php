@@ -42,8 +42,9 @@ class LocationResource extends Resource
                     ->label('Pabellon'),
 
                 Forms\Components\FileUpload::make('image')
-                    ->label('Imagen'),
-                
+                    ->label('Imagen')
+                    ->disk('public')
+                    ->directory('locations'),
             ]);
     }
 
@@ -51,6 +52,7 @@ class LocationResource extends Resource
     {
         return $table
             ->columns([
+                Columns\ImageColumn::make('image'),
                 Columns\TextColumn::make('name')
                 ->label('Nombre'),
                 Columns\TextColumn::make('capacity')

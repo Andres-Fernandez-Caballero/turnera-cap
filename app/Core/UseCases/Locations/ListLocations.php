@@ -9,6 +9,11 @@ class ListLocations
 {
     public function execute(): Collection
     {
-        return Location::all();
+        $server_url = env('APP_URL', 'localhost');
+        return Location::all()->map(function($location) use($server_url): Location 
+        {
+            $location->image = "{$server_url}/storage/{$location->image}";
+            return $location;
+        });
     }
 }
