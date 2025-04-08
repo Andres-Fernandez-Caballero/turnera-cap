@@ -31,18 +31,23 @@ class LocationResource extends Resource
                     ->numeric()
                     ->minValue(1)
                     ->required(),
-                
+
                 Forms\Components\TextInput::make('description')
                     ->label('Descripción'),
-                        
+
                 Forms\Components\TextInput::make('address')
                     ->label('Dirección'),
-                            
+
                 Forms\Components\TextInput::make('pavilion')
                     ->label('Pabellon'),
 
-                Forms\Components\FileUpload::make('image')
+                    Forms\Components\FileUpload::make('image')
                     ->label('Imagen')
+                    ->imageEditor()
+                    ->imageResizeMode('cover') // Recorta la imagen para ajustarse al tamaño especificado
+                    ->imageCropAspectRatio('1:1') // Mantiene la imagen cuadrada
+                    ->imageResizeTargetWidth(1080) // Igualamos el ancho a la altura para que sea 1:1
+                    ->imageResizeTargetHeight(1080) // Fijamos la altura en 1080px
                     ->disk('public')
                     ->directory('locations'),
             ]);
@@ -54,9 +59,9 @@ class LocationResource extends Resource
             ->columns([
                 Columns\ImageColumn::make('image'),
                 Columns\TextColumn::make('name')
-                ->label('Nombre'),
+                    ->label('Nombre'),
                 Columns\TextColumn::make('capacity')
-                ->label('Capacidad')
+                    ->label('Capacidad')
 
             ])
             ->filters([
