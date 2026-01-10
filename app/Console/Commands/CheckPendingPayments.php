@@ -20,7 +20,7 @@ class CheckPendingPayments extends Command
         $this->info('=== Iniciando Recuperación de Pagos ===');
 
         // 1. Buscamos pagos NO aprobados de los últimos 10 días
-        $pendingPayments = Payment::where('status', '!=', PaymentStatus::APPROBED)
+        $pendingPayments = Payment::where('status', '!=', PaymentStatus::APPROVED)
             ->where('created_at', '>=', Carbon::now()->subDays(60)) 
             ->get();
 
@@ -71,7 +71,7 @@ class CheckPendingPayments extends Command
 
                 if ($mpStatus === 'approved') {
                     // Actualizamos DB
-                    $payment->status = FormStatus::APPROBED;
+                    $payment->status = PaymentStatus::APPROVED;
                     $payment->payment_code = $mpId; // Guardamos el ID que nos faltaba
                     $payment->save();
                     
