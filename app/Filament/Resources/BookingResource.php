@@ -18,6 +18,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -104,6 +105,9 @@ class BookingResource extends Resource
 
                 Tables\Columns\TextColumn::make('date')
                     ->label('Fecha'),
+
+                TextColumn::make('payment.payment_method')
+                    ->label('Medio de pago'),
 
                 Tables\Columns\TextColumn::make('timeSlots.start_time')
                     ->label('Hora de inicio')
