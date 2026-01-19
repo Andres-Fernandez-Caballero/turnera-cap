@@ -12,29 +12,29 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Payment extends Model
 {
     protected $fillable = [
-       'user_id',
-       'payment_method',
-       'currency',
-       'payment_code',
-       'reference',
-       'amount',
-       'status',
-       'description',
-       'title',
-];
+        'user_id',
+        'payment_method',
+        'currency',
+        'payment_code',
+        'reference',
+        'amount',
+        'status',
+        'description',
+        'title',
+    ];
 
-protected $casts = [
-    'payment_method' => PaymentMethod::class,
-    'status' => PaymentStatus::class,
-];
+    protected $casts = [
+        'payment_method' => PaymentMethod::class,
+        'status' => PaymentStatus::class,
+    ];
 
-public function user(): HasOne
-{
-    return $this->hasOne(User::class);
-}
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
 
-public function payable(): MorphTo
-{
-    return $this->morphTo('payable');
-}
+    public function payable(): MorphTo
+    {
+        return $this->morphTo('payable');
+    }
 }

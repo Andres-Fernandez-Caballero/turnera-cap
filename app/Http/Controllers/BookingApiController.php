@@ -6,6 +6,8 @@ use App\Core\UseCases\Bookings\CreateBooking;
 use App\Core\UseCases\Bookings\ListBookingsByUser;
 use App\Core\UseCases\Payments\CreateMercadoPagoPayment;
 use App\Models\Booking;
+use App\Models\Payments\Enums\PaymentMethod;
+use App\Models\Payments\Enums\PaymentStatus;
 use App\Models\Payments\Payment;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
@@ -60,59 +62,81 @@ class BookingApiController extends Controller implements HasMiddleware
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+public function store(Request $request)
+{
+    try {
+        $user = $request->user();
 
-        try {
-            $user = $request->user();
+        if (!$user) {
+            throw new \Exception('No user found');
+        }
 
-            if (!$user) {
-                throw new \Exception('No user found');
-            }
+        static::validateRequest($request, [
+            'location_id' => 'required|exists:locations,id',
+            'timeSlots' => 'required|array',
+            'invites' => 'array',
+            'date' => 'required|date|after_or_equal:today',
+            'payment_method' => 'sometimes|string|in:mercado_pago,pago_administracion',
+        ]);
 
-            static::validateRequest($request, [
-                'location_id' => 'required|exists:locations,id',
-                'timeSlots' => 'required|array',
-                'invites' => 'array',
-                'date' => 'required|date|after_or_equal:today',
+        DB::beginTransaction();
+        $booking = $this->createBooking->execute(
+            $user->id,
+            $request->location_id,
+            $request->timeSlots,
+            $request->date,
+            $request->invites
+        );
+
+        $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
+
+        $paymentMethod = $request->payment_method ?? 'mercado_pago';
+
+        // Si es pago en administración, crear pago pendiente sin MercadoPago
+        if ($paymentMethod === 'pago_administracion') {
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'payment_method' => PaymentMethod::PAGO_EN_ADMINISTRACION,
+                'amount' => $totalAmount,
+                'currency' => 'ARS',
+                'status' => PaymentStatus::PENDING,
+                'title' => 'Reserva de pista',
+                'description' => 'Pago pendiente en administración',
             ]);
-
-
-            DB::beginTransaction();
-            $booking = $this->createBooking->execute(
-                $user->id,
-                $request->location_id,
-                $request->timeSlots,
-                $request->date,
-                $request->invites
-            );
-
-            $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
-
-            $preference = $this->createMercadoPagoPayment->execute(
-                "Reserva de pista",
-                $user,
-                $totalAmount,
-                [
-                    'booking_id' => $booking->id
-                ]
-            );
-            $payment = Payment::find($preference['payment_id']);
             $booking->payment()->save($payment);
             
-            if (!$preference) {
-                throw new \Exception('Error generando Pago');
-            }
             DB::commit();
-            return response()
-                ->json(['init_point' => env('SANDBOX', false) == false? $preference['init_point'] : $preference['sandbox_init_point'] ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
-                'message' => $e->getMessage(),
-            ], 422);
+                'message' => 'Reserva creada. Pendiente de pago en administración.',
+                'booking_id' => $booking->id,
+            ], 201);
         }
+
+        // Mercado Pago (comportamiento actual)
+        $preference = $this->createMercadoPagoPayment->execute(
+            "Reserva de pista",
+            $user,
+            $totalAmount,
+            [
+                'booking_id' => $booking->id
+            ]
+        );
+        $payment = Payment::find($preference['payment_id']);
+        $booking->payment()->save($payment);
+        
+        if (!$preference) {
+            throw new \Exception('Error generando Pago');
+        }
+        DB::commit();
+        return response()
+            ->json(['init_point' => env('SANDBOX', false) == false ? $preference['init_point'] : $preference['sandbox_init_point']], 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => $e->getMessage(),
+        ], 422);
     }
+}
 
     /**
      * Display the specified resource.
