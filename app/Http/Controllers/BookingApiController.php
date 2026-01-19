@@ -102,6 +102,7 @@ public function store(Request $request)
                 'status' => PaymentStatus::PENDING,
                 'title' => 'Reserva de pista',
                 'description' => 'Pago pendiente en administración',
+                'reference' => 'admin_' . $user->id . '_' . time(), // <-- Agregar esta línea
             ]);
             $booking->payment()->save($payment);
             
