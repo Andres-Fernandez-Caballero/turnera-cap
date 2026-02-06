@@ -86,6 +86,11 @@ class BookingResource extends Resource
                         Forms\Components\TextInput::make('dni'),
                     ]),
 
+                Forms\Components\DateTimePicker::make('check_in_at')
+                    ->label('Check-in')
+                    ->placeholder('Sin check-in')
+                    ->readonly(),
+
 
             ]);
     }
@@ -106,6 +111,11 @@ class BookingResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->label('Fecha'),
 
+                Tables\Columns\TextColumn::make('check_in_at')
+                    ->label('Check-in')
+                    ->dateTime()
+                    ->placeholder('Sin check-in'),
+
                 TextColumn::make('payment.payment_method')
                     ->label('Medio de pago'),
 
@@ -116,7 +126,15 @@ class BookingResource extends Resource
                 Tables\Columns\TextColumn::make('timeSlots.end_time')
                     ->label('Hora de fin')
                     ->badge(),
-                Tables\Columns\TextColumn::make('payment_status ')
+                Tables\Columns\TextColumn::make('payment_status')
+                    ->label('Estado de pago')
+                    ->badge()
+                    ->color(fn(PaymentStatus $state) => match ($state) {
+                        PaymentStatus::PENDING => 'warning',
+                        PaymentStatus::PENDING_APPROVAL => 'warning',
+                        PaymentStatus::APPROVED => 'success',
+                        PaymentStatus::REJECTED => 'danger'
+                    }),
 
             ])
             ->filters([
@@ -139,32 +157,47 @@ class BookingResource extends Resource
 
                 Tables\Actions\Action::make('payment_data')
                     ->label('Factura')
-                    ->recordTitle('Factura')
-                    ->infolist([
-                        Grid::make()
+                    ->icon('heroicon-o-document-text')
+                    ->modalHeading('Detalle de Factura')
+                    ->fillForm(fn (Booking $record): array => [
+                        'payment_status' => $record->payment?->status->value ?? PaymentStatus::PENDING->value,
+                    ])
+                    ->form([
+                        Forms\Components\Grid::make()
                             ->schema([
-                                TextEntry::make('payment.payment_method')
-                                    ->label('Medio de pago'),
+                                Forms\Components\Placeholder::make('payment_method')
+                                    ->label('Medio de pago')
+                                    ->content(fn (Booking $record) => $record->payment?->payment_method ?? 'N/A'),
 
-                                TextEntry::make('payment_status')
-                                    ->label('Estado')
-                                    ->weight(FontWeight::Bold)
-                                    ->color(fn(PaymentStatus $state) => match ($state) {
-                                        PaymentStatus::PENDING => 'warning',
-                                        PaymentStatus::APPROVED => 'success',
-                                        PaymentStatus::REJECTED => 'danger'
-                                    }),
-                                TextEntry::make('payment.reference')
-                                    ->label('Referencia'),
-                                TextEntry::make('payment.payment_code')
-                                    ->label('Codigo de pago'),
-                                TextEntry::make('payment.amount')
-                                    ->prefix('ARS $ ')
+                                Forms\Components\Select::make('payment_status')
+                                    ->label('Estado de Pago')
+                                    ->options(PaymentStatus::class)
+                                    ->required(),
+
+                                Forms\Components\Placeholder::make('reference')
+                                    ->label('Referencia')
+                                    ->content(fn (Booking $record) => $record->payment?->reference ?? 'N/A'),
+
+                                Forms\Components\Placeholder::make('payment_code')
+                                    ->label('Código de pago')
+                                    ->content(fn (Booking $record) => $record->payment?->payment_code ?? 'N/A'),
+
+                                Forms\Components\Placeholder::make('amount')
                                     ->label('Total')
-                                    ->weight(FontWeight::Bold),
+                                    ->content(fn (Booking $record) => $record->payment ? 'ARS $ ' . number_format($record->payment->amount, 2) : 'N/A'),
                             ])
                             ->columns(2),
-                    ]),
+                    ])
+                    ->action(function (Booking $record, array $data): void {
+                        if ($record->payment) {
+                            $record->payment->update([
+                                'status' => $data['payment_status'],
+                            ]);
+                        } else {
+                            // Si no hay pago, podríamos crearlo o avisar. 
+                            // Por ahora solo actualizamos si existe.
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -23,6 +23,10 @@ class Booking extends Model
         'check_in_at',
     ];
 
+    protected $casts = [
+        'check_in_at' => 'datetime',
+    ];
+
     protected static function boot()
     {
         parent::boot();
