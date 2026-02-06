@@ -20,6 +20,7 @@ class Booking extends Model
         'user_id',
         'date',
         'people_count', 
+        'check_in_at',
     ];
 
     protected static function boot()
