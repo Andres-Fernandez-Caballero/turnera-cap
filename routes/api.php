@@ -24,6 +24,8 @@ Route::apiResource('locations', \App\Http\Controllers\LocationApiController::cla
 ->except('destroy','store','update');
 
 Route::apiResource('bookings', \App\Http\Controllers\BookingApiController::class);
+Route::post('bookings/{id}/check-in', [\App\Http\Controllers\BookingApiController::class, 'checkIn'])
+    ->name('bookings.check-in');
 
 // protected routes
 Route::middleware('auth:sanctum')->group(function () {

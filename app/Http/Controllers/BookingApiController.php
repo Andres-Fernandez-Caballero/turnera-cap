@@ -180,6 +180,27 @@ public function store(Request $request)
         return response()->json($booking, 204);
     }
 
+    public function checkIn(string $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        if ($booking->check_in_at) {
+            return response()->json([
+                'message' => 'La reserva ya tiene un check-in registrado.',
+                'check_in_at' => $booking->check_in_at,
+            ], 422);
+        }
+
+        $booking->update([
+            'check_in_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Check-in realizado con éxito.',
+            'booking' => $booking,
+        ], 200);
+    }
+
     private static function validateRequest(Request $request, array $rules = [])
     {
         $validator = Validator::make($request->all(), $rules);
