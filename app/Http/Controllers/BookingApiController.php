@@ -35,7 +35,8 @@ class BookingApiController extends Controller implements HasMiddleware
         ListBookingsByUser $listBookingsByUser,
         CreateBooking $createBooking,
         CreateMercadoPagoPayment $createMercadoPagoPayment
-    ) {
+        )
+    {
         $this->listBookingsByUser = $listBookingsByUser;
         $this->createBooking = $createBooking;
         $this->createMercadoPagoPayment = $createMercadoPagoPayment;
@@ -46,98 +47,99 @@ class BookingApiController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        try{
-            $user = $request->user();        
+        try {
+            $user = $request->user();
             $bookings = $this->listBookingsByUser->execute($user);
-    
+
             return response()
                 ->json($bookings, 200);
-        }catch(\Exception $e){
+        }
+        catch (\Exception $e) {
             return response()->json([
-                'message'=> "No se pudieron cargar las reservas, pruebe mas tarde",
+                'message' => "No se pudieron cargar las reservas, pruebe mas tarde",
             ], 400);
         }
     }
 
     /**
      * Store a newly created resource in storage.
-     */
-public function store(Request $request)
-{
-    try {
-        $user = $request->user();
+     */public function store(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-        if (!$user) {
-            throw new \Exception('No user found');
-        }
+            if (!$user) {
+                throw new \Exception('No user found');
+            }
 
-        static::validateRequest($request, [
-            'location_id' => 'required|exists:locations,id',
-            'timeSlots' => 'required|array',
-            'invites' => 'array',
-            'date' => 'required|date|after_or_equal:today',
-            'payment_method' => 'sometimes|string|in:mercado_pago,pago_administracion',
-        ]);
-
-        DB::beginTransaction();
-        $booking = $this->createBooking->execute(
-            $user->id,
-            $request->location_id,
-            $request->timeSlots,
-            $request->date,
-            $request->invites
-        );
-
-        $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
-
-        $paymentMethod = $request->payment_method ?? 'mercado_pago';
-
-        // Si es pago en administración, crear pago pendiente sin MercadoPago
-        if ($paymentMethod === 'pago_administracion') {
-            $payment = Payment::create([
-                'user_id' => $user->id,
-                'payment_method' => PaymentMethod::PAGO_EN_ADMINISTRACION,
-                'amount' => $totalAmount,
-                'currency' => 'ARS',
-                'status' => PaymentStatus::PENDING,
-                'title' => 'Reserva de pista',
-                'description' => 'Pago pendiente en administración',
-                'reference' => 'admin_' . $user->id . '_' . time(), // <-- Agregar esta línea
+            static::validateRequest($request, [
+                'location_id' => 'required|exists:locations,id',
+                'timeSlots' => 'required|array',
+                'invites' => 'array',
+                'date' => 'required|date|after_or_equal:today',
+                'payment_method' => 'sometimes|string|in:mercado_pago,pago_administracion',
             ]);
-            $booking->payment()->save($payment);
-            
-            DB::commit();
-            return response()->json([
-                'message' => 'Reserva creada. Pendiente de pago en administración.',
-                'booking_id' => $booking->id,
-            ], 201);
-        }
 
-        // Mercado Pago (comportamiento actual)
-        $preference = $this->createMercadoPagoPayment->execute(
-            "Reserva de pista",
-            $user,
-            $totalAmount,
+            DB::beginTransaction();
+            $booking = $this->createBooking->execute(
+                $user->id,
+                $request->location_id,
+                $request->timeSlots,
+                $request->date,
+                $request->invites
+            );
+
+            $totalAmount = TimeSlot::whereIn('id', $booking->timeSlots->pluck('id')->toArray())->sum('cost_per_hour');
+
+            $paymentMethod = $request->payment_method ?? 'mercado_pago';
+
+            // Si es pago en administración, crear pago pendiente sin MercadoPago
+            if ($paymentMethod === 'pago_administracion') {
+                $payment = Payment::create([
+                    'user_id' => $user->id,
+                    'payment_method' => PaymentMethod::PAGO_EN_ADMINISTRACION,
+                    'amount' => $totalAmount,
+                    'currency' => 'ARS',
+                    'status' => PaymentStatus::PENDING,
+                    'title' => 'Reserva de pista',
+                    'description' => 'Pago pendiente en administración',
+                    'reference' => 'admin_' . $user->id . '_' . time(), // <-- Agregar esta línea
+                ]);
+                $booking->payment()->save($payment);
+
+                DB::commit();
+                return response()->json([
+                    'message' => 'Reserva creada. Pendiente de pago en administración.',
+                    'booking_id' => $booking->id,
+                ], 201);
+            }
+
+            // Mercado Pago (comportamiento actual)
+            $preference = $this->createMercadoPagoPayment->execute(
+                "Reserva de pista",
+                $user,
+                $totalAmount,
             [
                 'booking_id' => $booking->id
             ]
-        );
-        $payment = Payment::find($preference['payment_id']);
-        $booking->payment()->save($payment);
-        
-        if (!$preference) {
-            throw new \Exception('Error generando Pago');
+            );
+            $payment = Payment::find($preference['payment_id']);
+            $booking->payment()->save($payment);
+
+            if (!$preference) {
+                throw new \Exception('Error generando Pago');
+            }
+            DB::commit();
+            return response()
+                ->json(['init_point' => env('SANDBOX', false) == false ? $preference['init_point'] : $preference['sandbox_init_point']], 201);
         }
-        DB::commit();
-        return response()
-            ->json(['init_point' => env('SANDBOX', false) == false ? $preference['init_point'] : $preference['sandbox_init_point']], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => $e->getMessage(),
-        ], 422);
+        catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
-}
 
     /**
      * Display the specified resource.
@@ -157,11 +159,11 @@ public function store(Request $request)
 
         static::validateRequest(
             $request,
-            [
-                'start_time' => 'sometimes|date|before:end_time',
-                'end_time' => 'sometimes|date|after:start_time',
-                'people_count' => 'sometimes|integer|min:1',
-            ]
+        [
+            'start_time' => 'sometimes|date|before:end_time',
+            'end_time' => 'sometimes|date|after:start_time',
+            'people_count' => 'sometimes|integer|min:1',
+        ]
         );
 
 
@@ -179,26 +181,37 @@ public function store(Request $request)
 
         return response()->json($booking, 204);
     }
-
     public function checkIn(string $id)
     {
-        $booking = Booking::findOrFail($id);
+        try {
+            $booking = Booking::findOrFail($id);
 
-        if ($booking->check_in_at) {
+            if ($booking->check_in_at) {
+                return response()->json([
+                    'message' => 'La reserva ya tiene un check-in registrado.',
+                    'check_in_at' => $booking->check_in_at,
+                ], 422);
+            }
+
+            // Usamos una forma más directa para evitar problemas de Mass Assignment
+            $booking->check_in_at = date('Y-m-d H:i:s');
+            $booking->save();
+
             return response()->json([
-                'message' => 'La reserva ya tiene un check-in registrado.',
-                'check_in_at' => $booking->check_in_at,
-            ], 422);
+                'message' => 'Check-in realizado con éxito.',
+                'booking' => $booking,
+            ], 200);
+
         }
-
-        $booking->update([
-            'check_in_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Check-in realizado con éxito.',
-            'booking' => $booking,
-        ], 200);
+        catch (\Exception $e) {
+            // Esto nos dirá el error REAL en el cuerpo del JSON
+            return response()->json([
+                'message' => 'Error interno en el servidor',
+                'error_detail' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 
     private static function validateRequest(Request $request, array $rules = [])
